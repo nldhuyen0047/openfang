@@ -52,3 +52,5 @@ pub mod mumble;
 pub mod ntfy;
 pub mod webhook;
 pub mod wecom;
+// Wave 6 — NAS & self-hosted platforms
+pub mod synology_chat;

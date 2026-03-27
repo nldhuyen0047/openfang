@@ -2200,6 +2200,26 @@ const CHANNEL_REGISTRY: &[ChannelMeta] = &[
         setup_steps: &["Create a WeCom application at work.weixin.qq.com", "Get Corp ID, Agent ID, and Secret", "Configure callback URL to your webhook endpoint"],
         config_template: "[channels.wecom]\ncorp_id = \"\"\nagent_id = \"\"\nsecret_env = \"WECOM_SECRET\"",
     },
+    // ── NAS & Self-hosted ──────────────────────────────────────────
+    ChannelMeta {
+        name: "synology_chat", display_name: "Synology Chat", icon: "SY",
+        description: "Synology Chat via incoming/outgoing webhooks",
+        category: "enterprise", difficulty: "Medium", setup_time: "~5 min",
+        quick_setup: "Enter your Synology Chat incoming webhook URL and outgoing webhook token",
+        setup_type: "form",
+        fields: &[
+            ChannelField { key: "incoming_webhook_url_env", label: "Incoming Webhook URL", field_type: FieldType::Secret, env_var: Some("SYNOLOGY_CHAT_INCOMING_URL"), required: true, placeholder: "https://nas:5001/webapi/entry.cgi?api=SYNO.Chat.External&method=incoming&version=2&token=%22xxx%22", advanced: false },
+            ChannelField { key: "outgoing_token_env", label: "Outgoing Webhook Token", field_type: FieldType::Secret, env_var: Some("SYNOLOGY_CHAT_TOKEN"), required: true, placeholder: "outgoing-webhook-token", advanced: false },
+            ChannelField { key: "webhook_port", label: "Webhook Listen Port", field_type: FieldType::Number, env_var: None, required: false, placeholder: "8465", advanced: true },
+            ChannelField { key: "default_agent", label: "Default Agent", field_type: FieldType::Text, env_var: None, required: false, placeholder: "assistant", advanced: true },
+        ],
+        setup_steps: &[
+            "In Synology Chat, go to Integration > Incoming Webhooks > Create and copy the URL",
+            "Go to Integration > Outgoing Webhooks > Create, set the trigger URL to http://<openfang-host>:8465/synology-chat, and copy the token",
+            "Paste both values below",
+        ],
+        config_template: "[channels.synology_chat]\nincoming_webhook_url_env = \"SYNOLOGY_CHAT_INCOMING_URL\"\noutgoing_token_env = \"SYNOLOGY_CHAT_TOKEN\"",
+    },
 ];
 
 /// Check if a channel is configured (has a `[channels.xxx]` section in config).
@@ -2247,6 +2267,7 @@ fn is_channel_configured(config: &openfang_types::config::ChannelsConfig, name: 
         "webhook" => config.webhook.is_some(),
         "mumble" => config.mumble.is_some(),
         "wecom" => config.wecom.is_some(),
+        "synology_chat" => config.synology_chat.is_some(),
         _ => false,
     }
 }
@@ -2482,6 +2503,10 @@ fn channel_config_values(
             .and_then(|c| serde_json::to_value(c).ok()),
         "wecom" => config
             .wecom
+            .as_ref()
+            .and_then(|c| serde_json::to_value(c).ok()),
+        "synology_chat" => config
+            .synology_chat
             .as_ref()
             .and_then(|c| serde_json::to_value(c).ok()),
         _ => None,

@@ -1647,6 +1647,9 @@ pub struct ChannelsConfig {
     pub linkedin: Option<LinkedInConfig>,
     /// WeCom/WeChat Work configuration (None = disabled).
     pub wecom: Option<WeComConfig>,
+    // Wave 6 — NAS & self-hosted platforms
+    /// Synology Chat configuration (None = disabled).
+    pub synology_chat: Option<SynologyChatConfig>,
 }
 
 /// Telegram channel adapter configuration.
@@ -3505,6 +3508,38 @@ impl KernelConfig {
             self.web.fetch.timeout_secs = 30;
         } else if self.web.fetch.timeout_secs > 120 {
             self.web.fetch.timeout_secs = 120;
+        }
+    }
+}
+
+/// Synology Chat channel adapter configuration.
+///
+/// Uses Synology Chat's outgoing webhook (to receive messages) and incoming
+/// webhook (to send responses).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SynologyChatConfig {
+    /// Env var name holding the incoming webhook URL (for sending responses to Synology Chat).
+    pub incoming_webhook_url_env: String,
+    /// Env var name holding the outgoing webhook token (for verifying requests from Synology Chat).
+    pub outgoing_token_env: String,
+    /// Port to listen for outgoing webhook POST requests from Synology Chat.
+    pub webhook_port: u16,
+    /// Default agent name to route messages to.
+    pub default_agent: Option<String>,
+    /// Per-channel behavior overrides.
+    #[serde(default)]
+    pub overrides: ChannelOverrides,
+}
+
+impl Default for SynologyChatConfig {
+    fn default() -> Self {
+        Self {
+            incoming_webhook_url_env: "SYNOLOGY_CHAT_INCOMING_URL".to_string(),
+            outgoing_token_env: "SYNOLOGY_CHAT_TOKEN".to_string(),
+            webhook_port: 8465,
+            default_agent: None,
+            overrides: ChannelOverrides::default(),
         }
     }
 }

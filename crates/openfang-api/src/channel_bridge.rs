@@ -50,6 +50,7 @@ use openfang_channels::gotify::GotifyAdapter;
 use openfang_channels::linkedin::LinkedInAdapter;
 use openfang_channels::mumble::MumbleAdapter;
 use openfang_channels::ntfy::NtfyAdapter;
+use openfang_channels::synology_chat::SynologyChatAdapter;
 use openfang_channels::webhook::WebhookAdapter;
 use openfang_channels::wecom::WeComAdapter;
 use openfang_kernel::OpenFangKernel;
@@ -809,6 +810,8 @@ impl ChannelBridgeHandle for KernelBridgeAdapter {
             "webhook" => channels.webhook.as_ref().map(|c| c.overrides.clone()),
             "linkedin" => channels.linkedin.as_ref().map(|c| c.overrides.clone()),
             "wecom" => channels.wecom.as_ref().map(|c| c.overrides.clone()),
+            // Wave 6
+            "synology_chat" => channels.synology_chat.as_ref().map(|c| c.overrides.clone()),
             _ => None,
         }
     }
@@ -1113,7 +1116,9 @@ pub async fn start_channel_bridge_with_config(
         || config.ntfy.is_some()
         || config.gotify.is_some()
         || config.webhook.is_some()
-        || config.linkedin.is_some();
+        || config.linkedin.is_some()
+        // Wave 6
+        || config.synology_chat.is_some();
 
     if !has_any {
         return (None, Vec::new());
@@ -1668,6 +1673,24 @@ pub async fn start_channel_bridge_with_config(
                 li_config.organization_id.clone(),
             ));
             adapters.push((adapter, li_config.default_agent.clone()));
+        }
+    }
+
+    // ── Wave 6 — NAS & self-hosted ──────────────────────────────
+
+    // Synology Chat
+    if let Some(ref syno_config) = config.synology_chat {
+        if let Some(token) = read_token(&syno_config.outgoing_token_env, "Synology Chat") {
+            if let Some(incoming_url) =
+                read_token(&syno_config.incoming_webhook_url_env, "Synology Chat Incoming URL")
+            {
+                let adapter = Arc::new(SynologyChatAdapter::new(
+                    token,
+                    incoming_url,
+                    syno_config.webhook_port,
+                ));
+                adapters.push((adapter, syno_config.default_agent.clone()));
+            }
         }
     }
 
